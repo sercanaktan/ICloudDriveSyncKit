@@ -56,7 +56,7 @@ public struct ICloudDriveSyncSectionStyle {
 /// A complete, ready-to-embed "iCloud Backup" settings section: an auto-sync
 /// toggle, manual Back Up / Restore buttons (surfaced automatically only
 /// when they're actually relevant — auto-sync off, or a backup couldn't be
-/// restored), a last-sync / storage-size info card, and — right below Back
+/// restored), last-backup / estimated-size info rows, and — right below Back
 /// Up/Restore, so only alongside them — an opt-in Delete Backup button (see
 /// `showDeleteBackupOption` on `init`). Drop straight into any settings
 /// screen; every string and color is configurable, everything else (loading
@@ -96,8 +96,8 @@ public struct ICloudDriveSyncSettingsSection: View {
         autoSyncTitle: String = "Auto Sync",
         manualBackupTitle: String = "Back Up",
         manualRestoreTitle: String = "Restore",
-        lastSyncTitle: String = "Last Sync",
-        storageTitle: String = "iCloud Storage",
+        lastSyncTitle: String = "Last Backup",
+        storageTitle: String = "Estimated Size",
         neverSyncedLabel: String = "Never",
         noBackupLabel: String = "No backup",
         showDeleteBackupOption: Bool = false,
@@ -128,15 +128,8 @@ public struct ICloudDriveSyncSettingsSection: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 0) {
             autoSyncCard
-            syncInfoCard
-            if let manualResult {
-                Text("\(manualResult.isSuccess ? "Success" : "Fail"): \(manualResult.message)")
-                    .font(style.captionFont)
-                    .foregroundStyle(manualResult.isSuccess ? style.accentColor : style.errorColor)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
         }
         .onAppear {
             Task { await engine.refreshBackupStatus() }
@@ -228,6 +221,16 @@ public struct ICloudDriveSyncSettingsSection: View {
 
                 if engine.syncProgress.isActive {
                     progressStatus
+                }
+
+                VStack(spacing: 0) {
+                    if let manualResult {
+                        statusMessageRow(manualResult)
+                        Divider()
+                    }
+                    infoRow(title: lastSyncTitle, value: lastSyncLabel)
+                    Divider()
+                    infoRow(title: storageTitle, value: storageLabel)
                 }
             }
         ))
@@ -387,16 +390,22 @@ public struct ICloudDriveSyncSettingsSection: View {
         }
     }
 
-    // MARK: Sync info card
+    // MARK: Status and backup info rows
 
-    private var syncInfoCard: some View {
-        style.cardBackground(AnyView(
-            VStack(spacing: 0) {
-                infoRow(title: lastSyncTitle, value: lastSyncLabel)
-                Divider()
-                infoRow(title: storageTitle, value: storageLabel)
-            }
-        ))
+    private func statusMessageRow(_ result: ManualResult) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: result.isSuccess ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .foregroundStyle(result.isSuccess ? style.accentColor : style.errorColor)
+            Text("\(result.isSuccess ? "Success" : "Fail"): \(result.message)")
+                .font(style.captionFont)
+                .foregroundStyle(result.isSuccess ? style.accentColor : style.errorColor)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 9)
     }
 
     private func infoRow(title: String, value: String) -> some View {
