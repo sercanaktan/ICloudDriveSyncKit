@@ -71,6 +71,8 @@ public struct ICloudDriveSyncSettingsSection: View {
     private let storageTitle: String
     private let neverSyncedLabel: String
     private let noBackupLabel: String
+    private let autoSyncEnabledMessage: String
+    private let autoSyncDisabledMessage: String
     private let showDeleteBackupOption: Bool
     private let deleteBackupTitle: String
 
@@ -100,6 +102,8 @@ public struct ICloudDriveSyncSettingsSection: View {
         storageTitle: String = "Estimated Size",
         neverSyncedLabel: String = "Never",
         noBackupLabel: String = "No backup",
+        autoSyncEnabledMessage: String = "Automatically backs up with iCloud.",
+        autoSyncDisabledMessage: String = "You can manage backups manually.",
         showDeleteBackupOption: Bool = false,
         deleteBackupTitle: String = "Delete Backup"
     ) {
@@ -112,6 +116,8 @@ public struct ICloudDriveSyncSettingsSection: View {
         self.storageTitle = storageTitle
         self.neverSyncedLabel = neverSyncedLabel
         self.noBackupLabel = noBackupLabel
+        self.autoSyncEnabledMessage = autoSyncEnabledMessage
+        self.autoSyncDisabledMessage = autoSyncDisabledMessage
         self.showDeleteBackupOption = showDeleteBackupOption
         self.deleteBackupTitle = deleteBackupTitle
     }
@@ -350,8 +356,8 @@ public struct ICloudDriveSyncSettingsSection: View {
             return engine.messages.restoreNeedsWiFiOrOverwrite
         }
         return engine.autoSyncMode == .off
-            ? "You can manage backups manually."
-            : "Automatically backs up with iCloud."
+            ? autoSyncDisabledMessage
+            : autoSyncEnabledMessage
     }
 
     private var progressTitle: String {
