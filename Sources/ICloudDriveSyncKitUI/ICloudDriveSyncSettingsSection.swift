@@ -226,12 +226,13 @@ public struct ICloudDriveSyncSettingsSection: View {
                 VStack(spacing: 0) {
                     if let manualResult {
                         statusMessageRow(manualResult)
-                        Divider()
                     }
-                    infoRow(title: lastSyncTitle, value: lastSyncLabel)
-                    Divider()
-                    infoRow(title: storageTitle, value: storageLabel)
+                    thinSeparator
+                    infoRow(iconName: "clock.arrow.circlepath", title: lastSyncTitle, value: lastSyncLabel)
+                    thinSeparator
+                    infoRow(iconName: "externaldrive", title: storageTitle, value: storageLabel)
                 }
+                .padding(.bottom, -6)
             }
         ))
     }
@@ -392,6 +393,12 @@ public struct ICloudDriveSyncSettingsSection: View {
 
     // MARK: Status and backup info rows
 
+    private var thinSeparator: some View {
+        Rectangle()
+            .fill(style.secondaryTextColor.opacity(0.16))
+            .frame(height: 0.5)
+    }
+
     private func statusMessageRow(_ result: ManualResult) -> some View {
         HStack(spacing: 8) {
             Image(systemName: result.isSuccess ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
@@ -408,18 +415,22 @@ public struct ICloudDriveSyncSettingsSection: View {
         .padding(.vertical, 9)
     }
 
-    private func infoRow(title: String, value: String) -> some View {
-        HStack {
+    private func infoRow(iconName: String, title: String, value: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: iconName)
+                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .foregroundStyle(style.secondaryTextColor)
+                .frame(width: 22)
             Text(title)
-                .font(style.titleFont)
-                .foregroundStyle(style.primaryTextColor)
+                .font(style.captionFont)
+                .foregroundStyle(style.secondaryTextColor)
             Spacer()
             Text(value)
-                .font(style.valueFont)
-                .foregroundStyle(style.accentColor)
+                .font(style.captionFont)
+                .foregroundStyle(style.secondaryTextColor)
                 .multilineTextAlignment(.trailing)
         }
-        .frame(height: 46)
+        .frame(height: 34)
     }
 
     private var lastSyncLabel: String {
