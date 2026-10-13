@@ -134,6 +134,40 @@ final class PayloadDataSourceTests: XCTestCase {
         XCTAssertTrue(engine.syncOutcome.isSuccess)
     }
 
+    func testManualSyncRequeuesCloudItemsMissingFromCurrentEnvelopeRoster() async throws {
+        let tempCloud = TempDirectory()
+        let store = InMemoryCloudStore()
+        let backupURL = tempCloud.url.appendingPathComponent("Backup.json")
+        let itemsURL = backupURL.deletingLastPathComponent().appendingPathComponent("Items", isDirectory: true)
+        let itemAURL = ICloudDriveFileIO.itemURL(for: "a", in: itemsURL)
+        let itemBURL = ICloudDriveFileIO.itemURL(for: "b", in: itemsURL)
+        let source = try makeSource()
+        try source.replaceData(
+            manifest: Data("manifest".utf8),
+            items: [
+                "a": Data("A".utf8),
+                "b": Data("B".utf8)
+            ],
+            modifiedAt: [
+                "a": Date(timeIntervalSince1970: 1),
+                "b": Date(timeIntervalSince1970: 2)
+            ]
+        )
+        let engine = makeEngine(source: source, backupURL: backupURL, store: store)
+
+        await engine.syncManually()
+        let firstWriteCount = await store.writeCallCount()
+
+        try FileManager.default.createDirectory(at: itemAURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data().write(to: itemAURL)
+
+        await engine.syncManually()
+
+        let secondWrites = Array(await store.writtenURLs().dropFirst(firstWriteCount))
+        XCTAssertFalse(secondWrites.contains(itemAURL), "existing cloud items should not be re-uploaded when there is no pending local edit")
+        XCTAssertTrue(secondWrites.contains(itemBURL), "missing cloud items listed by the local data source should be re-uploaded to repair partial backups")
+    }
+
     private func makeSource() throws -> ICloudDriveSyncPayloadDataSource {
         try ICloudDriveSyncPayloadDataSource(storageDirectory: tempDir.url.appendingPathComponent("Payload", isDirectory: true))
     }

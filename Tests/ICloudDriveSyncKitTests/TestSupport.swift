@@ -79,6 +79,7 @@ actor InMemoryCloudStore {
     }
 
     func writeCallCount() -> Int { writeCalls.count }
+    func writtenURLs() -> [URL] { writeCalls }
     func deleteCallCount() -> Int { deleteCalls.count }
     func downloadCallCount() -> Int { downloadCalls.count }
     func file(at url: URL) -> Data? { files[url] }

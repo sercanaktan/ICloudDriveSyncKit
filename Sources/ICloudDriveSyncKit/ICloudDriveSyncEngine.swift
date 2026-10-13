@@ -1470,9 +1470,21 @@ public final class ICloudDriveSyncEngine: ObservableObject {
         try FileManager.default.createDirectory(at: itemsURL, withIntermediateDirectories: true)
         await seedItemByteSizeCacheIfNeeded(itemsURL: itemsURL)
 
+        let allItemIDs = dataSource.allDataItemIDs()
         let isFullExport = isFirstSync || !hadItemsDirectory
+        let missingCloudItemIDs = isFullExport
+            ? []
+            : allItemIDs.filter { itemID in
+                let itemURL = ICloudDriveFileIO.itemURL(for: itemID, in: itemsURL)
+                return !FileManager.default.fileExists(atPath: itemURL.path)
+            }
+        if !missingCloudItemIDs.isEmpty {
+            logEvent("icloud_missing_cloud_items_requeued", [
+                "count": String(missingCloudItemIDs.count)
+            ], level: .warning)
+        }
         let payload = dataSource.exportData(
-            changedItemIDs: isFullExport ? nil : pendingItemIDs,
+            changedItemIDs: isFullExport ? nil : pendingItemIDs.union(missingCloudItemIDs),
             deletedItemIDs: pendingDeletedItemIDs
         )
 
@@ -1579,7 +1591,7 @@ public final class ICloudDriveSyncEngine: ObservableObject {
             items: itemsToUpload,
             deletedItemIDs: pendingDeletedItemIDs,
             manifest: payload.manifest,
-            allItemIDs: dataSource.allDataItemIDs(),
+            allItemIDs: allItemIDs,
             appName: config.appName,
             exportedAt: exportDate,
             deviceID: deviceID,
@@ -1902,7 +1914,11 @@ public final class ICloudDriveSyncEngine: ObservableObject {
                     restoreWarningMessage = config.messages.restoreFailedPleaseRetry
                 }
             }
-            logEvent("icloud_restore_failed", ["error_type": String(describing: type(of: error))], level: .error)
+            logEvent("icloud_restore_failed", [
+                "error_type": String(describing: type(of: error)),
+                "error": String(describing: error),
+                "message": error.localizedDescription
+            ], level: .error)
             finishSyncProgress(success: false)
             return false
         }
